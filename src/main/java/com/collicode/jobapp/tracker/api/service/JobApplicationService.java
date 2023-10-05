@@ -4,11 +4,14 @@ package com.collicode.jobapp.tracker.api.service;
 import com.collicode.jobapp.tracker.api.model.AddJobApplicationInput;
 import com.collicode.jobapp.tracker.api.model.JobApplication;
 import com.collicode.jobapp.tracker.api.repository.JobApplicationRepository;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 @Service
@@ -60,5 +63,22 @@ public class JobApplicationService {
                     l.setStatus(jobApplication.getStatus());
                     return jobApplicationRepository.save(jobApplication).log();
                 });
+    }
+    public Mono<JobApplication> deleteJobApplication(@NonNull Integer id) {
+        final Mono<JobApplication> jobApplication = jobApplicationRepository.findById(id);
+        if (Objects.isNull(jobApplication)) {
+            return Mono.empty();
+        }
+        log.info("Deleting job application idd {}", id);
+        return this.jobApplicationRepository.findById(id).switchIfEmpty(Mono.empty()).filter(Objects::nonNull)
+                .flatMap(jobApplicationToBeDeleted -> jobApplicationRepository
+                        .delete(jobApplicationToBeDeleted)
+                        .then(Mono.just(jobApplicationToBeDeleted))).log();
+
+    }
+
+
+    public Flux<JobApplication> allJobApplication() {
+        return this.jobApplicationRepository.findAll().log();
     }
 }
