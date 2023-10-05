@@ -19,18 +19,7 @@ import reactor.core.publisher.Mono;
 
 @Controller
 public class JobApplicationController {
-    @Bean
-    private WebFluxConfigurer corsConfigurer() {
-        return new WebFluxConfigurer() {
-            @Value("${ui.path}")
-            private String UI_PATH;
 
-            @Override
-            public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/graphql").allowedOrigins(UI_PATH);
-            }
-        };
-    }
 
     @Autowired
     private JobApplicationService jobApplicationService;

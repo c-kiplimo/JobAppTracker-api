@@ -5,31 +5,30 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.Column;
+import org.springframework.data.relational.core.mapping.Table;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+
 import java.time.LocalDate;
 
 @NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Setter
-@Entity
 @Table(name = "job_application")
 public class JobApplication {
     @Id
     private Integer id;
-    @Column(name = "company_name")
+    @Column("company_name")
     private String companyName;
-    @Column(name = "job_title")
+    @Column("job_title")
     private String jobTitle;
-    @Column(name = "salary_range")
+    @Column("salary_range")
     private String salaryRange;
-    @Column(name = "job_url")
+    @Column("job_url")
     private String jobUrl;
-    @Column(name = "applied_date")
+    @Column( "applied_date")
     private LocalDate appliedDate;
     private String description;
     private String status;
