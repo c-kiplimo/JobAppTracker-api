@@ -1,0 +1,19 @@
+version: "2"
+services:
+  api:
+    image: collins6299/job-application-tracker:latest
+    environment:
+      - "TZ=Africa/Nairobi"
+      - JAVA_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremo>
+        -Dcom.sun.management.jmxremote.authenticate=f>
+        -Dcom.sun.management.jmxremote.ssl=false
+        -Djava.net.preferIPv4Stack=true
+        -Dcom.sun.management.jmxremote.rmi.port=10000
+        -Djava.rmi.server.hostname=localhost
+        -Dlog4j.configuration=file:/configs/log4j.pro>
+        -XX:+UseParallelGC -Xms128M -Xmx2048M
+    volumes:
+      - /logs:/logs
+    ports:
+      - 8081:8081
+    restart: on-failure
