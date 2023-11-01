@@ -1,33 +1,36 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spring-boot-k8s
+  name: spring-boot-k8s-deployment-loadbalancer
+  labels:
+    app: spring-boot-k8s-loadbalancer
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: spring-boot-k8s
+      app: spring-boot-k8s-loadbalancer
   template:
     metadata:
       labels:
-        app: spring-boot-k8s
+        app: spring-boot-k8s-loadbalancer
     spec:
       containers:
-        - name: jobapptracker-api-api-1
+        - name: spring-boot-k8s-loadbalancer
           image: collins6299/job-application-tracker:tagversion
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
+
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: spring-boot-k8s-service
+  name: myapp-service-loadbalancer
 spec:
+  type: LoadBalancer
   selector:
-    app: spring-boot-k8s
+    app: myapp-app-loadbalancer
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8081
-  type: LoadBalancer
+      targetPort: 8080
