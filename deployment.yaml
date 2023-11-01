@@ -1,20 +1,33 @@
 apiVersion: apps/v1
-kind: Deployment # Kubernetes resource kind we are creating
+kind: Deployment
 metadata:
   name: spring-boot-k8s
 spec:
+  replicas: 2
   selector:
     matchLabels:
       app: spring-boot-k8s
-  replicas: 2 # Number of replicas that will be created for this deployment
   template:
     metadata:
       labels:
         app: spring-boot-k8s
     spec:
       containers:
-        - name:  jobapptracker-api-api-1 # Name of the container
-          image: collins6299/job-application-tracker:latest # Image that will be used to containers in the cluster
+        - name: jobapptracker-api-api-1
+          image: collins6299/job-application-tracker:latest
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8081 # The port that the container is running on in the cluster
+            - containerPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-boot-k8s-service
+spec:
+  selector:
+    app: spring-boot-k8s
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8081
+  type: NodePort
