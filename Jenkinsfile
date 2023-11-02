@@ -26,7 +26,6 @@ pipeline {
 
 	    stage('Build Docker Image') {
 		    steps {
-			    sh 'whoami'
 			    script {
 				    myimage = docker.build("collins6299/job-application-tracker:${env.BUILD_ID}")
 			    }
