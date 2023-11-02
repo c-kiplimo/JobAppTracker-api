@@ -9,6 +9,7 @@ pipeline {
         CLUSTER_NAME = 'k8s-cluster'
         LOCATION = 'us-central1'
         CREDENTIALS_ID = 'kubernetes'
+		BUILD_ID ='latest'
     }
 
     stages {

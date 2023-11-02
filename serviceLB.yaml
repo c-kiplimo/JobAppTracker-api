@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: spring-boot-k8s-loadbalancer
-          image: collins6299/job-application-tracker:tagversion
+          image: collins6299/job-application-tracker:latest
           ports:
             - containerPort: 8081
 
