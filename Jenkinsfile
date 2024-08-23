@@ -1,64 +1,42 @@
-pipeline {
+def remote = [name: 'K8S_Master', host: '51.20.81.211', user: 'kube', password: 'admin123', allowAnyHosts: true]
+pipeline{
     agent any
     tools {
-        maven 'Maven 3.5.0'
+        maven "maven3.9.1"
     }
-
-    environment {
-        PROJECT_ID = 'jenkins-403820'
-        CLUSTER_NAME = 'k8s-cluster'
-        LOCATION = 'us-central1'
-        CREDENTIALS_ID = 'kubernetes'
-		BUILD_ID ='latest'
-    }
-
-    stages {
-        stage('Scm Checkout') {
-            steps {
-                checkout scm
+    stages{
+        stage('1. Git Clone'){
+            steps{
+                git branch: 'develop', url: 'https://github.com/c-kiplimo/JobAppTracker-api'
             }
         }
-
-        stage('Build') {
-            steps {
-                sh 'mvn clean package'
+        stage('2. Maven Build'){
+            steps{
+                sh "mvn clean package"
             }
         }
-
-        stage('Build Docker Image') {
-            steps {
-                script {
-                    sh 'docker build -t collins6299/job-application-tracker:latest .'
+        stage('5. Build Docker Image'){
+            steps{
+                sh "docker build . -t collins6299/job-application-tracker:1.0.0"
+            }
+        }
+        stage('6. DockerHub Login'){
+            steps{
+                withCredentials([string(credentialsId: 'DockerHub password', variable: 'docker')]) {
+                    sh "docker login -u collins6299 -p ${docker}"
                 }
             }
         }
-
-        stage("Push Docker Image") {
-            steps {
-                script {
-                    echo "Push Docker Image"
-                    withCredentials([string(credentialsId: 'dockerhub', variable: 'dockerhub')]) {
-                        sh "docker login -u collins6299 -p ${dockerhub}"
-                    }
-                    sh 'docker push collins6299/job-application-tracker:latest'
-
-                }
+        stage('7. Push to DokerHub Registry'){
+            steps{
+                sh "docker push collins6299/job-application-tracker:1.0.0"
             }
         }
-
-        stage('Deploy to K8s') {
-            steps {
-                echo "Deployment started ..."
-                sh 'ls -ltr'
-                sh 'pwd'
-                sh "sed -i 's/tagversion/${env.BUILD_ID}/g' serviceLB.yaml"
-                sh "sed -i 's/tagversion/${env.BUILD_ID}/g' deployment.yaml"
-                echo "Start deployment of serviceLB.yaml"
-                step([$class: 'KubernetesEngineBuilder', projectId: env.PROJECT_ID, clusterName: env.CLUSTER_NAME, location: env.LOCATION, manifestPattern: 'serviceLB.yaml', credentialsId: env.CREDENTIALS_ID, verifyDeployments: true])
-                echo "Start deployment of deployment.yaml"
-                step([$class: 'KubernetesEngineBuilder', projectId: env.PROJECT_ID, clusterName: env.CLUSTER_NAME, location: env.LOCATION, manifestPattern: 'deployment.yaml', credentialsId: env.CREDENTIALS_ID, verifyDeployments: true])
-                echo "Deployment Finished ..."
+        stage('8. SSH onto K8S_Master & Deployment'){
+            steps{
+                sshPut remote: remote, from: '/var/lib/jenkins/jobs/spring/deployment.yml', into: '.'
+                sshCommand remote: remote, command: "kubectl apply -f deployment.yml"
             }
         }
     }
-}
+} 

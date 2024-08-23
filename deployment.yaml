@@ -1,33 +1,172 @@
+# Deployment for Job Application Tracker API
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spring-boot-k8s
+  name: jobapptracker-api
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: spring-boot-k8s
+      app: jobapptracker-api
   template:
     metadata:
       labels:
-        app: spring-boot-k8s
+        app: jobapptracker-api
     spec:
       containers:
-        - name: jobapptracker-api-api-1
-          image: collins6299/job-application-tracker:latest
+        - name: jobapptracker-api-container
+          image: collins6299/job-application-tracker:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8081
+          env:
+            - name: SPRING_R2DBC_URL
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: SPRING_R2DBC_URL
+            - name: SPRING_R2DBC_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: SPRING_R2DBC_USERNAME
+            - name: SPRING_R2DBC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: SPRING_R2DBC_PASSWORD
+            - name: SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: jobapptracker-config
+                  key: SERVER_PORT
 ---
+# Service for Job Application Tracker API
 apiVersion: v1
 kind: Service
 metadata:
-  name: spring-boot-k8s-service
+  name: jobapptracker-api-service
 spec:
   selector:
-    app: spring-boot-k8s
+    app: jobapptracker-api
   ports:
     - protocol: TCP
       port: 80
       targetPort: 8081
   type: LoadBalancer
+
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jobapptracker-mysql
+  name: jobapptracker-mysql
+spec:
+  type: NodePort
+  ports:
+    - name: "3306"
+      port: 3306
+      targetPort: 3306
+      nodePort: 30406
+      protocol: TCP
+  selector:
+    service: jobapptracker-mysql
+status:
+  loadBalancer: {}
+---
+# Deployment for MySQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    service: jobapptracker-mysql
+  name: jobapptracker-mysql
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: jobapptracker-mysql
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        service: jobapptracker-mysql
+    spec:
+      volumes:
+        - name: mysqlfiles
+          persistentVolumeClaim:
+            claimName: jobapptracker-mysql-data
+      containers:
+        - env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: MYSQL_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jobapptracker-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_DATABASE
+              value: jobapptracker
+            - name: TZ
+              value: Africa/Nairobi
+          image: mysql:8.0
+          name: jobapptracker-mysql-container
+          ports:
+            - containerPort: 3306
+          resources: {}
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: mysqlfiles
+              mountPath: /var/lib/mysql
+      restartPolicy: Always
+status: {}
+
+---
+# Persistent Volume Claim for MySQL Data
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jobapptracker-mysql-data
+  namespace: default
+spec:
+  storageClassName: scw-bssd-retain
+  resources:
+    requests:
+      storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+---
+# ConfigMap for non-sensitive configurations
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jobapptracker-config
+data:
+  SERVER_PORT: "10000"
+---
+# Secret for sensitive data
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jobapptracker-secrets
+type: Opaque
+stringData:
+  SPRING_R2DBC_URL: r2dbc:mysql://localhost:3306/jobApp
+  SPRING_R2DBC_USERNAME: root
+  SPRING_R2DBC_PASSWORD: password
+  MYSQL_ROOT_PASSWORD: @WSX3edc
+  MYSQL_USER: jobappuser
+  MYSQL_PASSWORD: #EDC2wsx
+
