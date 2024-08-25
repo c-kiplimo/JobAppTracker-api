@@ -40,6 +40,7 @@ spec:
                 configMapKeyRef:
                   name: jobapptracker-config
                   key: SERVER_PORT
+
 ---
 # Service for Job Application Tracker API
 apiVersion: v1
@@ -60,9 +61,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  name: jobapptracker-mysql
   labels:
     app: jobapptracker-mysql
-  name: jobapptracker-mysql
 spec:
   type: NodePort
   ports:
@@ -73,35 +74,32 @@ spec:
       protocol: TCP
   selector:
     service: jobapptracker-mysql
-status:
-  loadBalancer: {}
+
 ---
 # Deployment for MySQL
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  creationTimestamp: null
+  name: jobapptracker-mysql
   labels:
     service: jobapptracker-mysql
-  name: jobapptracker-mysql
 spec:
   replicas: 1
   selector:
     matchLabels:
       service: jobapptracker-mysql
-  strategy: {}
   template:
     metadata:
-      creationTimestamp: null
       labels:
         service: jobapptracker-mysql
     spec:
-      volumes:
-        - name: mysqlfiles
-          persistentVolumeClaim:
-            claimName: jobapptracker-mysql-data
       containers:
-        - env:
+        - name: jobapptracker-mysql-container
+          image: mysql:8.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3306
+          env:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -121,17 +119,14 @@ spec:
               value: jobapptracker
             - name: TZ
               value: Africa/Nairobi
-          image: mysql:8.0
-          name: jobapptracker-mysql-container
-          ports:
-            - containerPort: 3306
-          resources: {}
-          imagePullPolicy: Always
           volumeMounts:
             - name: mysqlfiles
               mountPath: /var/lib/mysql
+      volumes:
+        - name: mysqlfiles
+          persistentVolumeClaim:
+            claimName: jobapptracker-mysql-data
       restartPolicy: Always
-status: {}
 
 ---
 # Persistent Volume Claim for MySQL Data
@@ -139,7 +134,6 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: jobapptracker-mysql-data
-  namespace: default
 spec:
   storageClassName: scw-bssd-retain
   resources:
@@ -147,6 +141,7 @@ spec:
       storage: 1Gi
   accessModes:
     - ReadWriteOnce
+
 ---
 # ConfigMap for non-sensitive configurations
 apiVersion: v1
@@ -155,6 +150,7 @@ metadata:
   name: jobapptracker-config
 data:
   SERVER_PORT: "10000"
+
 ---
 # Secret for sensitive data
 apiVersion: v1
@@ -163,10 +159,9 @@ metadata:
   name: jobapptracker-secrets
 type: Opaque
 stringData:
-  SPRING_R2DBC_URL: r2dbc:mysql://localhost:3306/jobApp
-  SPRING_R2DBC_USERNAME: root
-  SPRING_R2DBC_PASSWORD: password
-  MYSQL_ROOT_PASSWORD: @WSX3edc
-  MYSQL_USER: jobappuser
-  MYSQL_PASSWORD: #EDC2wsx
-
+  SPRING_R2DBC_URL: "r2dbc:mysql://localhost:3306/jobApp"
+  SPRING_R2DBC_USERNAME: "root"
+  SPRING_R2DBC_PASSWORD: "password"
+  MYSQL_ROOT_PASSWORD: "@WSX3edc"
+  MYSQL_USER: "jobappuser"
+  MYSQL_PASSWORD: "#EDC2wsx"
